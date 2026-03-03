@@ -21,3 +21,4 @@ bool HardenFileAcl(const std::wstring& path);
 bool HardenInstallDir();
 bool IsUserWritablePath(const std::wstring& path);
 bool HardenRegistryAcl();
+bool AllowUnsignedOverride();

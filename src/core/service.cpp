@@ -39,7 +39,7 @@ static void ReportStatus(DWORD state, DWORD win32Exit = NO_ERROR) {
 static void RunCore() {
     Config cfg = DefaultConfig();
     if (!VerifySelfSignature()) {
-        if (GetEnvironmentVariableW(L"AVRESEARCH_ALLOW_UNSIGNED", nullptr, 0) == 0) {
+        if (!AllowUnsignedOverride()) {
             LogError(L"signature check failed. stopping service.");
             return;
         }

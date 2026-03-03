@@ -463,6 +463,32 @@ bool HardenRegistryAcl() {
     return ok;
 }
 
+bool AllowUnsignedOverride() {
+    wchar_t buf[8] = {0};
+    if (GetEnvironmentVariableW(L"AVRESEARCH_ALLOW_UNSIGNED", buf, 8) > 0) {
+        if (buf[0] == L'1') return true;
+    }
+    DWORD val = 0, size = sizeof(val), type = REG_DWORD;
+    HKEY key = nullptr;
+    if (OpenSigKey(HKEY_LOCAL_MACHINE, KEY_QUERY_VALUE, key)) {
+        if (RegQueryValueExW(key, L"AllowUnsigned", nullptr, &type, (LPBYTE)&val, &size) == ERROR_SUCCESS) {
+            RegCloseKey(key);
+            if (val == 1) return true;
+        } else {
+            RegCloseKey(key);
+        }
+    }
+    if (OpenSigKey(HKEY_CURRENT_USER, KEY_QUERY_VALUE, key)) {
+        if (RegQueryValueExW(key, L"AllowUnsigned", nullptr, &type, (LPBYTE)&val, &size) == ERROR_SUCCESS) {
+            RegCloseKey(key);
+            if (val == 1) return true;
+        } else {
+            RegCloseKey(key);
+        }
+    }
+    return false;
+}
+
 static std::wstring ExtractExePath(const std::wstring& cmd) {
     std::wstring s = cmd;
     s.erase(0, s.find_first_not_of(L" \t"));

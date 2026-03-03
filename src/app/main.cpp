@@ -118,8 +118,8 @@ int wmain(int argc, wchar_t** argv) {
     InitNotifier();
     LogInfo(L"av research prototype starting");
     if (!VerifySelfSignature()) {
-        if (GetEnvironmentVariableW(L"AVRESEARCH_ALLOW_UNSIGNED", nullptr, 0) == 0) {
-            MessageBoxW(nullptr, L"signature check failed. set AVRESEARCH_ALLOW_UNSIGNED=1 to run for testing.", L"avresearch", MB_OK | MB_ICONERROR | MB_TOPMOST);
+        if (!AllowUnsignedOverride()) {
+            MessageBoxW(nullptr, L"signature check failed. set AVRESEARCH_ALLOW_UNSIGNED=1 or registry AllowUnsigned=1 to run for testing.", L"avresearch", MB_OK | MB_ICONERROR | MB_TOPMOST);
             LogError(L"signature check failed. exiting.");
             return 1;
         }
