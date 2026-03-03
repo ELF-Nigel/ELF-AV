@@ -269,6 +269,23 @@ static bool IsHiddenOrSystem(const std::wstring& path) {
     return (a & FILE_ATTRIBUTE_HIDDEN) || (a & FILE_ATTRIBUTE_SYSTEM);
 }
 
+static int FileAgeMinutes(const std::wstring& path) {
+    HANDLE h = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                           nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (h == INVALID_HANDLE_VALUE) return -1;
+    FILETIME ct{}, at{}, wt{};
+    if (!GetFileTime(h, &ct, &at, &wt)) { CloseHandle(h); return -1; }
+    CloseHandle(h);
+    FILETIME nowFt{};
+    GetSystemTimeAsFileTime(&nowFt);
+    ULARGE_INTEGER n{}, c{};
+    n.HighPart = nowFt.dwHighDateTime; n.LowPart = nowFt.dwLowDateTime;
+    c.HighPart = ct.dwHighDateTime; c.LowPart = ct.dwLowDateTime;
+    if (n.QuadPart < c.QuadPart) return -1;
+    uint64_t diff = n.QuadPart - c.QuadPart;
+    return (int)(diff / 600000000ULL); // 100ns to minutes
+}
+
 static bool EndsWith(const std::wstring& s, const std::wstring& suffix) {
     if (s.size() < suffix.size()) return false;
     return s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
@@ -341,6 +358,15 @@ ScanResult ScanFile(const std::wstring& path, const Config& cfg, const Signature
         if (!signedOk && (IsDoubleExtension(path) || HasAlternateDataStreams(path) || IsHiddenOrSystem(path)) && IsSuspiciousPath(path)) {
             result.malicious = true;
             result.reason = L"heuristic: unsigned + ads/doubleext/hidden in user path";
+        }
+    }
+
+    if (!result.malicious && exec) {
+        bool signedOk = IsFileSigned(path);
+        int ageMin = FileAgeMinutes(path);
+        if (!signedOk && IsSuspiciousPath(path) && ageMin >= 0 && ageMin <= 10) {
+            result.malicious = true;
+            result.reason = L"heuristic: new unsigned executable in user path";
         }
     }
 

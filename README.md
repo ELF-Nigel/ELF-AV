@@ -17,8 +17,9 @@ this is a **research-grade, open-source av prototype** for windows that performs
 - process telemetry via windows event log subscription (etw-backed)
 - full system scans (fixed drives) on startup and periodic schedule
 - mass-change detector with emergency lockdown (read-only) on watched paths
- - signature matches can be auto-deleted (high confidence)
- - desktop alerts (tray balloon) for detections and lockdowns
+- signature matches can be auto-deleted (high confidence)
+- desktop alerts (tray balloon) for detections and lockdowns
+- new unsigned executable in user paths (recently created) detection
 
 ## build (windows)
 
