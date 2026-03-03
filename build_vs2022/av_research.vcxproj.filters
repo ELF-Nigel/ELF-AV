@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\app\main.cpp">
+      <Filter>source\app</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\core\config.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\core\utils.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\core\logger.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\core\security.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\core\service.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\scanner.cpp">
+      <Filter>source\scan</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\scan_utils.cpp">
+      <Filter>source\scan</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\watcher.cpp">
+      <Filter>source\scan</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\telemetry.cpp">
+      <Filter>source\scan</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\protection.cpp">
+      <Filter>source\scan</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\script_heuristics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\canary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\net_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\registry_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\removable_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\process_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\persistence_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\system_tamper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\credential_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\lsass_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\driver_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\dns_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\hosts_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\scan\task_monitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\a\ELF-AV\ELF-AV\src\ui\notifier.cpp">
+      <Filter>source\ui</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\a\ELF-AV\ELF-AV\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{70163703-CEEB-3E0C-A6BD-FDD7D2EA16AF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{3C091382-9FBB-3D2E-97E7-CCB83FA9EBEF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\app">
+      <UniqueIdentifier>{724411D9-0DA0-3943-83EE-117A8B2B1602}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\core">
+      <UniqueIdentifier>{0D65A947-B8A2-3501-B260-51D5697711BE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\scan">
+      <UniqueIdentifier>{EDC9BDE9-246D-36A4-8DDD-5492C20444DF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\ui">
+      <UniqueIdentifier>{F83B8648-7211-3891-AFBB-09C97B385E47}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
