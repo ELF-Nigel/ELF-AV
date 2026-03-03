@@ -118,8 +118,12 @@ int wmain(int argc, wchar_t** argv) {
     InitNotifier();
     LogInfo(L"av research prototype starting");
     if (!VerifySelfSignature()) {
-        LogError(L"signature check failed. exiting.");
-        return 1;
+        if (GetEnvironmentVariableW(L"AVRESEARCH_ALLOW_UNSIGNED", nullptr, 0) == 0) {
+            MessageBoxW(nullptr, L"signature check failed. set AVRESEARCH_ALLOW_UNSIGNED=1 to run for testing.", L"avresearch", MB_OK | MB_ICONERROR | MB_TOPMOST);
+            LogError(L"signature check failed. exiting.");
+            return 1;
+        }
+        LogWarn(L"signature check failed. override enabled for testing.");
     }
     {
         wchar_t exePath[MAX_PATH] = {0};
