@@ -1,6 +1,8 @@
 name: generate sln
 
 on:
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -19,6 +21,6 @@ jobs:
           git config user.name "ELF-Nigel"
           git config user.email "ELF-Nigel@users.noreply.github.com"
           git add build_vs2022/av_research.sln build_vs2022/av_research.vcxproj build_vs2022/av_research.vcxproj.filters
-          git commit -m "ci: add vs2022 sln" || exit 0
+          git commit -m "ci: update vs2022 sln" || exit 0
       - name: push
         run: git push
