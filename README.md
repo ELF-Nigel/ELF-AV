@@ -52,6 +52,11 @@ del c:\temp\sigblob.bin
 .\build\release\av_research.exe
 ```
 
+## visual studio 2022 solution
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\gen_vs2022.ps1
+```
+
 ## on-demand scan
 ```powershell
 .\build\release\av_research.exe --scan c:\path\to\scan

@@ -120,7 +120,9 @@ int wmain(int argc, wchar_t** argv) {
     sigs.LoadEmbedded();
 
     if (argc > 2 && std::wstring(argv[1]) == L"--scan") {
+        std::wcout << L"scanning: " << argv[2] << L"\n";
         ScanPathRecursiveNoRecord(argv[2], cfg, sigs);
+        std::wcout << L"scan complete\n";
         return 0;
     }
     if (argc > 2 && std::wstring(argv[1]) == L"--quarantine") {
