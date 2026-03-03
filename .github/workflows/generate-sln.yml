@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   gen:
+    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +22,7 @@ jobs:
           git config user.name "ELF-Nigel"
           git config user.email "ELF-Nigel@users.noreply.github.com"
           git add build_vs2022/av_research.sln build_vs2022/av_research.vcxproj build_vs2022/av_research.vcxproj.filters
-          git commit -m "ci: update vs2022 sln" || exit 0
+          git diff --cached --quiet && exit 0
+          git commit -m "ci: update vs2022 sln"
       - name: push
         run: git push

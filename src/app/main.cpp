@@ -74,6 +74,24 @@ static void StartPeriodicScanThread(const Config& cfg, const SignatureDB& sigs) 
     }).detach();
 }
 
+static int ShowMenu() {
+    std::wcout << L"\nselect an option:\n";
+    std::wcout << L"1) scan path\n";
+    std::wcout << L"2) quarantine list\n";
+    std::wcout << L"3) quarantine list-details\n";
+    std::wcout << L"4) quarantine restore\n";
+    std::wcout << L"5) quarantine restore-all\n";
+    std::wcout << L"6) quarantine delete\n";
+    std::wcout << L"7) clean autoruns\n";
+    std::wcout << L"8) install service\n";
+    std::wcout << L"9) uninstall service\n";
+    std::wcout << L"0) exit\n";
+    std::wcout << L"> ";
+    int choice = -1;
+    std::wcin >> choice;
+    return choice;
+}
+
 int wmain(int argc, wchar_t** argv) {
     if (argc > 1) {
         std::wstring arg = argv[1];
@@ -81,13 +99,16 @@ int wmain(int argc, wchar_t** argv) {
         if (arg == L"--install") {
             wchar_t path[MAX_PATH] = {0};
             GetModuleFileNameW(nullptr, path, MAX_PATH);
+            LogInfo(L"installing service");
             return InstallService(path) ? 0 : 1;
         }
         if (arg == L"--uninstall") return UninstallService() ? 0 : 1;
         if (arg == L"--import-sigs" && argc > 2) {
+            LogInfo(L"importing signatures");
             return SaveSignatureBlobToRegistry(argv[2]) ? 0 : 1;
         }
         if (arg == L"--clean-autoruns") {
+            LogInfo(L"cleaning autoruns");
             return CleanSuspiciousAutoruns() ? 0 : 1;
         }
     }
@@ -193,6 +214,91 @@ int wmain(int argc, wchar_t** argv) {
             MoveFileExW(qfile.c_str(), orig.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
             DeleteQuarantineMeta(argv[3]);
             return 0;
+        }
+    }
+
+    if (argc == 1) {
+        for (;;) {
+            int choice = ShowMenu();
+            if (choice == 0) return 0;
+            if (choice == 1) {
+                std::wcout << L"path: ";
+                std::wstring p; std::wcin >> p;
+                std::wcout << L"scanning: " << p << L"\n";
+                ScanPathRecursiveNoRecord(p, cfg, sigs);
+                std::wcout << L"scan complete\n";
+            } else if (choice == 2) {
+                ListQuarantine(cfg.quarantine_dir);
+            } else if (choice == 3) {
+                std::wcout << L"listing details\n";
+                std::wstring pattern = cfg.quarantine_dir + L"\\*";
+                WIN32_FIND_DATAW f{};
+                HANDLE h = FindFirstFileW(pattern.c_str(), &f);
+                if (h != INVALID_HANDLE_VALUE) {
+                    do {
+                        if (f.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+                        std::wstring name = f.cFileName;
+                        auto dot2 = name.rfind(L".q");
+                        auto dot = (dot2 == std::wstring::npos) ? std::wstring::npos : name.rfind(L'.', dot2 - 1);
+                        if (dot != std::wstring::npos && dot2 != std::wstring::npos && dot2 > dot) {
+                            std::wstring sha = name.substr(dot + 1, dot2 - dot - 1);
+                            std::wstring orig;
+                            if (LoadQuarantineMeta(sha, orig)) {
+                                std::wcout << sha << L" | " << orig << L"\n";
+                            }
+                        }
+                    } while (FindNextFileW(h, &f));
+                    FindClose(h);
+                }
+            } else if (choice == 4) {
+                std::wcout << L"sha256: ";
+                std::wstring sha; std::wcin >> sha;
+                std::wstring orig;
+                if (!LoadQuarantineMeta(sha, orig)) { std::wcout << L"not found\n"; continue; }
+                std::wstring qfile;
+                if (!FindQuarantineFile(cfg.quarantine_dir, sha, qfile)) { std::wcout << L"not found\n"; continue; }
+                MoveFileExW(qfile.c_str(), orig.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
+                DeleteQuarantineMeta(sha);
+            } else if (choice == 5) {
+                std::wcout << L"restoring all\n";
+                std::wstring pattern = cfg.quarantine_dir + L"\\*";
+                WIN32_FIND_DATAW f{};
+                HANDLE h = FindFirstFileW(pattern.c_str(), &f);
+                if (h != INVALID_HANDLE_VALUE) {
+                    do {
+                        if (f.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+                        std::wstring name = f.cFileName;
+                        auto dot2 = name.rfind(L".q");
+                        auto dot = (dot2 == std::wstring::npos) ? std::wstring::npos : name.rfind(L'.', dot2 - 1);
+                        if (dot != std::wstring::npos && dot2 != std::wstring::npos && dot2 > dot) {
+                            std::wstring sha = name.substr(dot + 1, dot2 - dot - 1);
+                            std::wstring orig;
+                            if (LoadQuarantineMeta(sha, orig)) {
+                                std::wstring qfile = cfg.quarantine_dir + L"\\" + name;
+                                MoveFileExW(qfile.c_str(), orig.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
+                                DeleteQuarantineMeta(sha);
+                            }
+                        }
+                    } while (FindNextFileW(h, &f));
+                    FindClose(h);
+                }
+            } else if (choice == 6) {
+                std::wcout << L"sha256: ";
+                std::wstring sha; std::wcin >> sha;
+                std::wstring qfile;
+                if (FindQuarantineFile(cfg.quarantine_dir, sha, qfile)) {
+                    DeleteFileW(qfile.c_str());
+                    DeleteQuarantineMeta(sha);
+                }
+            } else if (choice == 7) {
+                CleanSuspiciousAutoruns();
+            } else if (choice == 8) {
+                wchar_t path[MAX_PATH] = {0};
+                GetModuleFileNameW(nullptr, path, MAX_PATH);
+                InstallService(path);
+            } else if (choice == 9) {
+                UninstallService();
+            }
         }
     }
 
