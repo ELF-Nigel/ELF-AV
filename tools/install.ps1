@@ -14,11 +14,19 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 $ErrorActionPreference = "Stop"
 
 # stop and uninstall old service if present
-try { Stop-Service AVResearch -ErrorAction SilentlyContinue } catch {}
+try { sc.exe stop AVResearch | Out-Null } catch {}
+Start-Sleep -Seconds 2
 try { & "$InstallDir\av_research.exe" --uninstall } catch {}
+try { sc.exe delete AVResearch | Out-Null } catch {}
 
-# remove old install
+# remove scheduled task if present
+try { schtasks.exe /delete /tn avresearch /f | Out-Null } catch {}
+
+# take ownership and reset acl so we can delete
 if (Test-Path $InstallDir) {
+    try { takeown /f $InstallDir /r /d y | Out-Null } catch {}
+    try { icacls $InstallDir /reset /t /c | Out-Null } catch {}
+    try { icacls $InstallDir /grant "Administrators:F" /t /c | Out-Null } catch {}
     Remove-Item -Recurse -Force $InstallDir
 }
 
