@@ -20,3 +20,19 @@ jobs:
         with:
           name: av_research_usermode
           path: build/Release/av_research.exe
+
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: build-usermode
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: av_research_usermode
+          path: dist
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: build ${{ github.run_number }}
+          files: dist/av_research.exe
