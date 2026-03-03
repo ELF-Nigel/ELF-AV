@@ -1,5 +1,6 @@
 #include "scan/telemetry.h"
 #include "core/logger.h"
+#include "ui/notifier.h"
 #include <windows.h>
 #include <winevt.h>
 #include <thread>
@@ -15,6 +16,34 @@ static std::wstring ExtractNewProcessName(const std::wstring& xml) {
     auto end = xml.find(L"</Data>", pos);
     if (end == std::wstring::npos) return L"";
     return xml.substr(pos, end - pos);
+}
+
+static std::wstring ExtractDataField(const std::wstring& xml, const std::wstring& field) {
+    std::wstring tag = L"<Data Name='" + field + L"'>";
+    auto pos = xml.find(tag);
+    if (pos == std::wstring::npos) return L"";
+    pos += tag.size();
+    auto end = xml.find(L"</Data>", pos);
+    if (end == std::wstring::npos) return L"";
+    return xml.substr(pos, end - pos);
+}
+
+static std::wstring ToLowerLocal(const std::wstring& s) {
+    std::wstring out = s;
+    for (auto& c : out) c = (wchar_t)towlower(c);
+    return out;
+}
+
+static bool SuspiciousCommandLine(const std::wstring& cmd) {
+    auto c = ToLowerLocal(cmd);
+    const wchar_t* patterns[] = {
+        L" -enc ", L"/enc ", L"encodedcommand", L"frombase64string",
+        L"invoke-expression", L" iex ", L"downloadstring",
+        L"mshta", L"rundll32", L"regsvr32", L"wscript", L"cscript"
+    };
+    int hits = 0;
+    for (auto p : patterns) if (c.find(p) != std::wstring::npos) hits++;
+    return hits >= 2;
 }
 
 static void TelemetryLoop(TelemetryCallback cb) {
@@ -54,6 +83,11 @@ static void TelemetryLoop(TelemetryCallback cb) {
             if (EvtRender(nullptr, hEvent, EvtRenderEventXml, (DWORD)(buf.size() * sizeof(wchar_t)), buf.data(), &used, &props)) {
                 std::wstring xml(buf.data());
                 auto proc = ExtractNewProcessName(xml);
+                auto cmd = ExtractDataField(xml, L"CommandLine");
+                if (!cmd.empty() && SuspiciousCommandLine(cmd)) {
+                    LogWarn(L"suspicious command line: " + cmd);
+                    NotifyAlert(L"avresearch alert", L"suspicious command line: " + cmd);
+                }
                 if (!proc.empty()) cb(proc);
             }
         }
