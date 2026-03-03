@@ -73,7 +73,7 @@ std::vector<std::wstring> GetFixedDrives() {
     DWORD mask = GetLogicalDrives();
     for (int i = 0; i < 26; i++) {
         if (!(mask & (1 << i))) continue;
-        wchar_t root[] = { (wchar_t)(L'A' + i), L':', L'\\', L'\\0' };
+        wchar_t root[] = { (wchar_t)(L'A' + i), L':', L'\\', L'\0' };
         if (GetDriveTypeW(root) == DRIVE_FIXED) {
             drives.emplace_back(root);
         }
@@ -119,7 +119,7 @@ static std::vector<std::wstring> GetRemovableDrivesOnce() {
     DWORD mask = GetLogicalDrives();
     for (int i = 0; i < 26; i++) {
         if (!(mask & (1 << i))) continue;
-        wchar_t root[] = { (wchar_t)(L'A' + i), L':', L'\\', L'\\0' };
+        wchar_t root[] = { (wchar_t)(L'A' + i), L':', L'\\', L'\0' };
         if (GetDriveTypeW(root) == DRIVE_REMOVABLE) {
             drives.emplace_back(root);
         }

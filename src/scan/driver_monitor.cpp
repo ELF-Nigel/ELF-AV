@@ -3,6 +3,7 @@
 #include "ui/notifier.h"
 #include <windows.h>
 #include <thread>
+#include <vector>
 
 static void CheckDrivers() {
     SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE);

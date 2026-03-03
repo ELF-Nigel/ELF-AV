@@ -5,13 +5,14 @@
 #include <windows.h>
 #include <thread>
 #include <unordered_set>
+#include <vector>
 
 static std::vector<std::wstring> GetRemovableDrives() {
     std::vector<std::wstring> drives;
     DWORD mask = GetLogicalDrives();
     for (int i = 0; i < 26; i++) {
         if (!(mask & (1 << i))) continue;
-        wchar_t root[] = { (wchar_t)(L'A' + i), L':', L'\', L'\0' };
+        wchar_t root[] = { (wchar_t)(L'A' + i), L':', L'\\', L'\0' };
         if (GetDriveTypeW(root) == DRIVE_REMOVABLE) {
             drives.emplace_back(root);
         }

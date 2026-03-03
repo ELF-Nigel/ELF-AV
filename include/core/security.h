@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <windows.h>
 
 bool VerifySelfSignature();
 bool DecryptEmbeddedSignatures(std::vector<std::wstring>& out);
