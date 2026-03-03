@@ -137,8 +137,8 @@ int wmain(int argc, wchar_t** argv) {
                 do {
                     if (f.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
                     std::wstring name = f.cFileName;
-                    auto dot = name.rfind(L".");
                     auto dot2 = name.rfind(L".q");
+                    auto dot = (dot2 == std::wstring::npos) ? std::wstring::npos : name.rfind(L'.', dot2 - 1);
                     if (dot != std::wstring::npos && dot2 != std::wstring::npos && dot2 > dot) {
                         std::wstring sha = name.substr(dot + 1, dot2 - dot - 1);
                         std::wstring orig;
@@ -159,8 +159,8 @@ int wmain(int argc, wchar_t** argv) {
                 do {
                     if (f.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
                     std::wstring name = f.cFileName;
-                    auto dot = name.rfind(L".");
                     auto dot2 = name.rfind(L".q");
+                    auto dot = (dot2 == std::wstring::npos) ? std::wstring::npos : name.rfind(L'.', dot2 - 1);
                     if (dot != std::wstring::npos && dot2 != std::wstring::npos && dot2 > dot) {
                         std::wstring sha = name.substr(dot + 1, dot2 - dot - 1);
                         std::wstring orig;
