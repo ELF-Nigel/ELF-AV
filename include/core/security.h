@@ -17,3 +17,6 @@ bool SetDirectoryLockdown(const std::wstring& path, bool enable);
 bool IsFileSignedPath(const std::wstring& path);
 bool CleanSuspiciousAutoruns();
 bool EnsureScheduledTask();
+bool HardenFileAcl(const std::wstring& path);
+bool HardenInstallDir();
+bool IsUserWritablePath(const std::wstring& path);

@@ -100,11 +100,20 @@ int wmain(int argc, wchar_t** argv) {
         LogError(L"signature check failed. exiting.");
         return 1;
     }
+    {
+        wchar_t exePath[MAX_PATH] = {0};
+        if (GetModuleFileNameW(nullptr, exePath, MAX_PATH)) {
+            if (IsUserWritablePath(exePath)) {
+                LogWarn(L"binary running from user-writable path: " + std::wstring(exePath));
+            }
+        }
+    }
     HardenDirectoryAcl(cfg.quarantine_dir);
     EnsureProcessAuditEnabled();
     CleanSuspiciousAutoruns();
     EnsureServiceRunning();
     EnsureScheduledTask();
+    HardenInstallDir();
 
     SignatureDB sigs;
     sigs.LoadEmbedded();

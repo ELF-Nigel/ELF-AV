@@ -42,10 +42,19 @@ static void RunCore() {
         LogError(L"signature check failed. stopping service.");
         return;
     }
+    {
+        wchar_t exePath[MAX_PATH] = {0};
+        if (GetModuleFileNameW(nullptr, exePath, MAX_PATH)) {
+            if (IsUserWritablePath(exePath)) {
+                LogWarn(L"binary running from user-writable path: " + std::wstring(exePath));
+            }
+        }
+    }
     HardenDirectoryAcl(cfg.quarantine_dir);
     EnsureProcessAuditEnabled();
     CleanSuspiciousAutoruns();
     EnsureScheduledTask();
+    HardenInstallDir();
 
     g_serviceRunning = true;
 

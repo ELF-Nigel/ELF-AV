@@ -376,6 +376,57 @@ bool SetDirectoryLockdown(const std::wstring& path, bool enable) {
     return ok;
 }
 
+bool IsUserWritablePath(const std::wstring& path) {
+    auto p = path;
+    std::transform(p.begin(), p.end(), p.begin(), ::towlower);
+    return (p.find(L"\\users\\") != std::wstring::npos) ||
+           (p.find(L"\\appdata\\") != std::wstring::npos) ||
+           (p.find(L"\\temp\\") != std::wstring::npos) ||
+           (p.find(L"\\downloads\\") != std::wstring::npos);
+}
+
+bool HardenFileAcl(const std::wstring& path) {
+    PSECURITY_DESCRIPTOR sd = nullptr;
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            L"D:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;GR;;;BU)(A;;GR;;;AU)", SDDL_REVISION_1, &sd, nullptr)) {
+        return false;
+    }
+
+    PACL dacl = nullptr;
+    BOOL daclPresent = FALSE;
+    BOOL daclDefaulted = FALSE;
+    if (!GetSecurityDescriptorDacl(sd, &daclPresent, &dacl, &daclDefaulted) || !daclPresent) {
+        LocalFree(sd);
+        return false;
+    }
+
+    bool ok = (SetNamedSecurityInfoW(
+        (LPWSTR)path.c_str(),
+        SE_FILE_OBJECT,
+        DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+        nullptr, nullptr,
+        dacl,
+        nullptr
+    ) == ERROR_SUCCESS);
+
+    LocalFree(sd);
+    return ok;
+}
+
+bool HardenInstallDir() {
+    wchar_t path[MAX_PATH] = {0};
+    if (GetModuleFileNameW(nullptr, path, MAX_PATH) == 0) return false;
+    std::wstring exe(path);
+    auto pos = exe.find_last_of(L"\\/");
+    if (pos == std::wstring::npos) return false;
+    std::wstring dir = exe.substr(0, pos);
+
+    // lock down exe and containing dir
+    bool ok1 = HardenFileAcl(exe);
+    bool ok2 = SetDirectoryLockdown(dir, false);
+    return ok1 && ok2;
+}
+
 static std::wstring ExtractExePath(const std::wstring& cmd) {
     std::wstring s = cmd;
     s.erase(0, s.find_first_not_of(L" \t"));
