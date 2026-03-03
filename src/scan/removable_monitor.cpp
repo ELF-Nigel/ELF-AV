@@ -1,6 +1,7 @@
 #include "scan/removable_monitor.h"
 #include "scan/scan_utils.h"
 #include "core/logger.h"
+#include "core/utils.h"
 #include "ui/notifier.h"
 #include <windows.h>
 #include <thread>

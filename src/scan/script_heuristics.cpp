@@ -4,9 +4,14 @@
 #include <fstream>
 #include <vector>
 
+static bool EndsWith(const std::wstring& s, const std::wstring& suffix) {
+    if (s.size() < suffix.size()) return false;
+    return s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 bool ScriptLooksMalicious(const std::wstring& path) {
     std::wstring lower = ToLower(path);
-    if (!(lower.ends_with(L".ps1") || lower.ends_with(L".vbs") || lower.ends_with(L".js"))) return false;
+    if (!(EndsWith(lower, L".ps1") || EndsWith(lower, L".vbs") || EndsWith(lower, L".js"))) return false;
 
     std::wifstream in(path);
     if (!in) return false;

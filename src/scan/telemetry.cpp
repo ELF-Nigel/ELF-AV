@@ -1,7 +1,7 @@
 #include "scan/telemetry.h"
 #include "core/logger.h"
 #include <windows.h>
-#include <wevtapi.h>
+#include <winevt.h>
 #include <thread>
 #include <vector>
 

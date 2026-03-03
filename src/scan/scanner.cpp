@@ -234,7 +234,7 @@ static bool HasAlternateDataStreams(const std::wstring& path) {
     bool has_ads = false;
     do {
         std::wstring name = data.cStreamName;
-        if (name != L\"::$DATA\") {
+        if (name != L"::$DATA\") {
             has_ads = true;
             break;
         }
@@ -245,7 +245,7 @@ static bool HasAlternateDataStreams(const std::wstring& path) {
 
 static bool IsDoubleExtension(const std::wstring& path) {
     auto p = ToLower(path);
-    static const wchar_t* bait[] = {L\"pdf\", L\"doc\", L\"docx\", L\"xls\", L\"xlsx\", L\"txt\", L\"jpg\", L\"png\", L\"mp4\"};
+    static const wchar_t* bait[] = {L"pdf", L"doc", L"docx", L"xls", L"xlsx", L"txt", L"jpg", L"png", L"mp4"};
     auto last = p.find_last_of(L'.');
     if (last == std::wstring::npos) return false;
     auto prev = p.find_last_of(L'.', last - 1);
@@ -253,7 +253,7 @@ static bool IsDoubleExtension(const std::wstring& path) {
     auto ext1 = p.substr(prev + 1, last - prev - 1);
     auto ext2 = p.substr(last + 1);
     bool exec = false;
-    for (auto e : {L\"exe\", L\"scr\", L\"com\", L\"bat\", L\"cmd\", L\"ps1\", L\"vbs\", L\"js\"}) {
+    for (auto e : {L"exe", L"scr", L"com", L"bat", L"cmd", L"ps1", L"vbs", L"js"}) {
         if (ext2 == e) { exec = true; break; }
     }
     if (!exec) return false;
@@ -267,11 +267,16 @@ static bool IsHiddenOrSystem(const std::wstring& path) {
     return (a & FILE_ATTRIBUTE_HIDDEN) || (a & FILE_ATTRIBUTE_SYSTEM);
 }
 
+static bool EndsWith(const std::wstring& s, const std::wstring& suffix) {
+    if (s.size() < suffix.size()) return false;
+    return s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 bool LooksLikeDllSideLoading(const std::wstring& path) {
     auto p = ToLower(path);
-    if (!p.ends_with(L\".dll\")) return false;
-    if (p.find(L\"\\\\windows\\\\system32\\\\\") != std::wstring::npos) return false;
-    if (p.find(L\"\\\\program files\\\\\") == std::wstring::npos) return false;
+    if (!EndsWith(p, L".dll")) return false;
+    if (p.find(L"\\windows\\system32\\") != std::wstring::npos) return false;
+    if (p.find(L"\\program files\\") == std::wstring::npos) return false;
     if (IsFileSigned(path)) return false;
     return true;
 }
