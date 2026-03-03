@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\a\ELF-AV\ELF-AV\build_vs2022\CMakeFiles\e48b881ed1f203a71e7a7de261f88915\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{CE7C07E0-B3FF-31A9-9C9D-AC88A147DAA9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
