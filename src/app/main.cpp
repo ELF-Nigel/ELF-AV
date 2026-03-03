@@ -77,14 +77,15 @@ static void StartPeriodicScanThread(const Config& cfg, const SignatureDB& sigs) 
 static int ShowMenu() {
     std::wcout << L"\nselect an option:\n";
     std::wcout << L"1) scan path\n";
-    std::wcout << L"2) quarantine list\n";
-    std::wcout << L"3) quarantine list-details\n";
-    std::wcout << L"4) quarantine restore\n";
-    std::wcout << L"5) quarantine restore-all\n";
-    std::wcout << L"6) quarantine delete\n";
-    std::wcout << L"7) clean autoruns\n";
-    std::wcout << L"8) install service\n";
-    std::wcout << L"9) uninstall service\n";
+    std::wcout << L"2) scan full system\n";
+    std::wcout << L"3) quarantine list\n";
+    std::wcout << L"4) quarantine list-details\n";
+    std::wcout << L"5) quarantine restore\n";
+    std::wcout << L"6) quarantine restore-all\n";
+    std::wcout << L"7) quarantine delete\n";
+    std::wcout << L"8) clean autoruns\n";
+    std::wcout << L"9) install service\n";
+    std::wcout << L"10) uninstall service\n";
     std::wcout << L"0) exit\n";
     std::wcout << L"> ";
     int choice = -1;
@@ -147,6 +148,14 @@ int wmain(int argc, wchar_t** argv) {
     if (argc > 2 && std::wstring(argv[1]) == L"--scan") {
         std::wcout << L"scanning: " << argv[2] << L"\n";
         ScanPathRecursiveNoRecord(argv[2], cfg, sigs);
+        std::wcout << L"scan complete\n";
+        return 0;
+    }
+    if (argc > 1 && std::wstring(argv[1]) == L"--scan-all") {
+        std::wcout << L"scanning full system\n";
+        for (const auto& drive : GetFixedDrives()) {
+            ScanPathRecursiveNoRecord(drive, cfg, sigs);
+        }
         std::wcout << L"scan complete\n";
         return 0;
     }
@@ -232,8 +241,14 @@ int wmain(int argc, wchar_t** argv) {
                 ScanPathRecursiveNoRecord(p, cfg, sigs);
                 std::wcout << L"scan complete\n";
             } else if (choice == 2) {
-                ListQuarantine(cfg.quarantine_dir);
+                std::wcout << L"scanning full system\n";
+                for (const auto& drive : GetFixedDrives()) {
+                    ScanPathRecursiveNoRecord(drive, cfg, sigs);
+                }
+                std::wcout << L"scan complete\n";
             } else if (choice == 3) {
+                ListQuarantine(cfg.quarantine_dir);
+            } else if (choice == 4) {
                 std::wcout << L"listing details\n";
                 std::wstring pattern = cfg.quarantine_dir + L"\\*";
                 WIN32_FIND_DATAW f{};
@@ -254,7 +269,7 @@ int wmain(int argc, wchar_t** argv) {
                     } while (FindNextFileW(h, &f));
                     FindClose(h);
                 }
-            } else if (choice == 4) {
+            } else if (choice == 5) {
                 std::wcout << L"sha256: ";
                 std::wstring sha; std::wcin >> sha;
                 std::wstring orig;
@@ -263,7 +278,7 @@ int wmain(int argc, wchar_t** argv) {
                 if (!FindQuarantineFile(cfg.quarantine_dir, sha, qfile)) { std::wcout << L"not found\n"; continue; }
                 MoveFileExW(qfile.c_str(), orig.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
                 DeleteQuarantineMeta(sha);
-            } else if (choice == 5) {
+            } else if (choice == 6) {
                 std::wcout << L"restoring all\n";
                 std::wstring pattern = cfg.quarantine_dir + L"\\*";
                 WIN32_FIND_DATAW f{};
@@ -286,7 +301,7 @@ int wmain(int argc, wchar_t** argv) {
                     } while (FindNextFileW(h, &f));
                     FindClose(h);
                 }
-            } else if (choice == 6) {
+            } else if (choice == 7) {
                 std::wcout << L"sha256: ";
                 std::wstring sha; std::wcin >> sha;
                 std::wstring qfile;
@@ -294,13 +309,13 @@ int wmain(int argc, wchar_t** argv) {
                     DeleteFileW(qfile.c_str());
                     DeleteQuarantineMeta(sha);
                 }
-            } else if (choice == 7) {
-                CleanSuspiciousAutoruns();
             } else if (choice == 8) {
+                CleanSuspiciousAutoruns();
+            } else if (choice == 9) {
                 wchar_t path[MAX_PATH] = {0};
                 GetModuleFileNameW(nullptr, path, MAX_PATH);
                 InstallService(path);
-            } else if (choice == 9) {
+            } else if (choice == 10) {
                 UninstallService();
             }
         }

@@ -81,6 +81,11 @@ powershell -ExecutionPolicy Bypass -File tools\vm_setup_win10.ps1
 .\build\release\av_research.exe --scan c:\path\to\scan
 ```
 
+## full system scan
+```powershell
+.\build\release\av_research.exe --scan-all
+```
+
 ## quarantine manager
 ```powershell
 .\build\release\av_research.exe --quarantine list
