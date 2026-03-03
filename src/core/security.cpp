@@ -388,7 +388,7 @@ bool IsUserWritablePath(const std::wstring& path) {
 bool HardenFileAcl(const std::wstring& path) {
     PSECURITY_DESCRIPTOR sd = nullptr;
     if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
-            L"D:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;GR;;;BU)(A;;GR;;;AU)", SDDL_REVISION_1, &sd, nullptr)) {
+            L"D:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;RX;;;BU)(A;;RX;;;AU)", SDDL_REVISION_1, &sd, nullptr)) {
         return false;
     }
 
