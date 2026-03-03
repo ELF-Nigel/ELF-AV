@@ -63,6 +63,7 @@ powershell -ExecutionPolicy Bypass -File tools\gen_vs2022.ps1
 - review event log alerts and tray notifications on win11
 - validate service hardening and registry acl on clean vm
 - verify startup folder, removable drive, and canary detections
+- check generate-sln workflow and committed filters
 
 ## on-demand scan
 ```powershell
