@@ -26,6 +26,7 @@
 #include <iostream>
 #include <atomic>
 #include <thread>
+#include <vector>
 
 static std::atomic<bool> g_running{true};
 
@@ -86,11 +87,59 @@ static int ShowMenu() {
     std::wcout << L"8) clean autoruns\n";
     std::wcout << L"9) full install (service + folders)\n";
     std::wcout << L"10) full uninstall\n";
+    std::wcout << L"11) show recent logs\n";
+    std::wcout << L"12) toggle verbose logging\n";
     std::wcout << L"0) exit\n";
     std::wcout << L"> ";
     int choice = -1;
     std::wcin >> choice;
     return choice;
+}
+
+static void ShowRecentLogs(size_t maxLines) {
+    std::wstring path = GetLogFilePath();
+    HANDLE h = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (h == INVALID_HANDLE_VALUE) {
+        std::wcout << L"no log file found\n";
+        return;
+    }
+    LARGE_INTEGER size{};
+    if (!GetFileSizeEx(h, &size) || size.QuadPart == 0) {
+        CloseHandle(h);
+        std::wcout << L"log is empty\n";
+        return;
+    }
+    const DWORD maxBytes = 128 * 1024;
+    LONGLONG offset = size.QuadPart > maxBytes ? (size.QuadPart - maxBytes) : 0;
+    if (offset % 2 != 0) offset++;
+    LARGE_INTEGER off{};
+    off.QuadPart = offset;
+    SetFilePointerEx(h, off, nullptr, FILE_BEGIN);
+    LONGLONG toRead = size.QuadPart - offset;
+    if (toRead > maxBytes) toRead = maxBytes;
+    std::vector<BYTE> buf((size_t)toRead);
+    DWORD read = 0;
+    if (!ReadFile(h, buf.data(), (DWORD)buf.size(), &read, nullptr)) {
+        CloseHandle(h);
+        std::wcout << L"failed to read log\n";
+        return;
+    }
+    CloseHandle(h);
+    std::wstring data((wchar_t*)buf.data(), read / sizeof(wchar_t));
+    std::vector<std::wstring> lines;
+    size_t start = 0;
+    while (start < data.size()) {
+        size_t end = data.find(L'\n', start);
+        if (end == std::wstring::npos) end = data.size();
+        std::wstring line = data.substr(start, end - start);
+        if (!line.empty() && line.back() == L'\r') line.pop_back();
+        if (!line.empty()) lines.push_back(line);
+        start = end + 1;
+    }
+    size_t begin = (lines.size() > maxLines) ? (lines.size() - maxLines) : 0;
+    for (size_t i = begin; i < lines.size(); i++) {
+        std::wcout << lines[i] << L"\n";
+    }
 }
 
 static void LogChoice(int choice) {
@@ -368,6 +417,14 @@ int wmain(int argc, wchar_t** argv) {
                 } else {
                     LogInfo(L"full uninstall complete");
                 }
+            } else if (choice == 11) {
+                LogInfo(L"menu: show recent logs requested");
+                ShowRecentLogs(200);
+            } else if (choice == 12) {
+                bool now = !IsVerboseLogging();
+                SetVerboseLogging(now);
+                std::wcout << (now ? L"verbose logging enabled\n" : L"verbose logging disabled\n");
+                LogInfo(now ? L"verbose logging enabled" : L"verbose logging disabled");
             }
         }
     }

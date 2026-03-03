@@ -22,6 +22,8 @@
 #include <windows.h>
 #include <atomic>
 #include <thread>
+#include <chrono>
+#include <ctime>
 
 static SERVICE_STATUS_HANDLE g_statusHandle = nullptr;
 static std::atomic<bool> g_serviceRunning{false};
@@ -36,8 +38,34 @@ static void ReportStatus(DWORD state, DWORD win32Exit = NO_ERROR) {
     if (g_statusHandle) SetServiceStatus(g_statusHandle, &status);
 }
 
+static uint64_t MsUntilNextLocalHour(int targetHour) {
+    using namespace std::chrono;
+    auto now = system_clock::now();
+    auto now_t = system_clock::to_time_t(now);
+    std::tm tm{};
+    localtime_s(&tm, &now_t);
+    tm.tm_hour = targetHour;
+    tm.tm_min = 0;
+    tm.tm_sec = 0;
+    auto target_t = mktime(&tm);
+    if (target_t <= now_t) {
+        tm.tm_mday += 1;
+        target_t = mktime(&tm);
+    }
+    return (uint64_t)(difftime(target_t, now_t) * 1000.0);
+}
+
+static void SleepCancelable(uint64_t ms) {
+    while (g_serviceRunning && ms > 0) {
+        DWORD chunk = (ms > 600000) ? 600000 : (DWORD)ms;
+        Sleep(chunk);
+        ms -= chunk;
+    }
+}
+
 static void RunCore() {
     Config cfg = DefaultConfig();
+    InitLogger(L"");
     LogInfo(L"svc: start");
     if (!VerifySelfSignature()) {
         if (!AllowUnsignedOverride()) {
@@ -139,20 +167,49 @@ static void RunCore() {
         std::thread([cfg, &sigs]() {
             while (g_serviceRunning) {
                 Sleep(cfg.periodic_scan_minutes * 60 * 1000);
+                LogInfo(L"svc: periodic scan start");
                 for (const auto& drive : GetFixedDrives()) {
                     ScanPathRecursiveNoRecord(drive, cfg, sigs);
                 }
                 ScanStartupFolders(cfg, sigs);
+                LogInfo(L"svc: periodic scan complete");
             }
         }).detach();
     }
 
     std::thread([&cfg, &sigs]() {
+        LogInfo(L"svc: initial full scan start");
         for (const auto& drive : GetFixedDrives()) {
             ScanPathRecursiveNoRecord(drive, cfg, sigs);
         }
         ScanStartupFolders(cfg, sigs);
         ScanRemovableDrivesOnce(cfg, sigs);
+        LogInfo(L"svc: initial full scan complete");
+    }).detach();
+
+    std::thread([&cfg, &sigs]() {
+        while (g_serviceRunning) {
+            uint64_t waitMs = MsUntilNextLocalHour(3);
+            LogInfo(L"svc: daily full scan scheduled");
+            SleepCancelable(waitMs);
+            if (!g_serviceRunning) break;
+            LogInfo(L"svc: daily full scan start");
+            for (const auto& drive : GetFixedDrives()) {
+                ScanPathRecursiveNoRecord(drive, cfg, sigs);
+            }
+            LogInfo(L"svc: daily full scan complete");
+        }
+    }).detach();
+
+    std::thread([&cfg, &sigs]() {
+        while (g_serviceRunning) {
+            SleepCancelable(6ull * 60 * 60 * 1000);
+            if (!g_serviceRunning) break;
+            LogInfo(L"svc: quick scan start");
+            ScanStartupFolders(cfg, sigs);
+            ScanRemovableDrivesOnce(cfg, sigs);
+            LogInfo(L"svc: quick scan complete");
+        }
     }).detach();
 
     InitCanaries(GetFixedDrives());

@@ -28,6 +28,7 @@ static void HandleScanResult(const std::wstring& path, const Config& cfg, const 
 }
 
 void ProcessFileEvent(const std::wstring& path, const Config& cfg, const SignatureDB& sigs) {
+    if (IsVerboseLogging()) LogInfo(L"scanning (realtime): " + path);
     auto res = ScanFile(path, cfg, sigs);
     HandleScanResult(path, cfg, res, true);
 }
@@ -36,6 +37,7 @@ static bool ScanPathRecursiveImpl(const std::wstring& path, const Config& cfg, c
     DWORD attrs = GetFileAttributesW(path.c_str());
     if (attrs == INVALID_FILE_ATTRIBUTES) return false;
     if (!(attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+        if (IsVerboseLogging()) LogInfo(L"scanning: " + path);
         auto res = ScanFile(path, cfg, sigs);
         HandleScanResult(path, cfg, res, record);
         return true;
@@ -52,6 +54,7 @@ static bool ScanPathRecursiveImpl(const std::wstring& path, const Config& cfg, c
         if (f.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             ScanPathRecursiveImpl(full, cfg, sigs, record);
         } else {
+            if (IsVerboseLogging()) LogInfo(L"scanning: " + full);
             auto res = ScanFile(full, cfg, sigs);
             HandleScanResult(full, cfg, res, record);
         }
