@@ -91,7 +91,7 @@ static bool IsFileSigned(const std::wstring& path) {
 static DWORD RvaToOffset(DWORD rva, IMAGE_NT_HEADERS* nt, IMAGE_SECTION_HEADER* sections) {
     for (WORD i = 0; i < nt->FileHeader.NumberOfSections; i++) {
         DWORD start = sections[i].VirtualAddress;
-        DWORD end = start + std::max(sections[i].Misc.VirtualSize, sections[i].SizeOfRawData);
+        DWORD end = start + (std::max)(sections[i].Misc.VirtualSize, sections[i].SizeOfRawData);
         if (rva >= start && rva < end) {
             return sections[i].PointerToRawData + (rva - start);
         }

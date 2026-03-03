@@ -194,6 +194,7 @@ bool GetSelfSha256(std::wstring& out) {
     std::vector<uint8_t> buf(1 << 16);
     DWORD read = 0;
     bool ok = false;
+    std::wstringstream ss;
 
     if (BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_SHA256_ALGORITHM, nullptr, 0) != 0) goto cleanup;
     if (BCryptGetProperty(hAlg, BCRYPT_OBJECT_LENGTH, (PUCHAR)&hashObjectSize, sizeof(DWORD), &dataLen, 0) != 0) goto cleanup;
@@ -207,7 +208,6 @@ bool GetSelfSha256(std::wstring& out) {
     }
     if (BCryptFinishHash(hHash, hash.data(), (ULONG)hash.size(), 0) != 0) goto cleanup;
 
-    std::wstringstream ss;
     for (auto b : hash) ss << std::hex << std::setw(2) << std::setfill(L'0') << (int)b;
     out = ss.str();
     ok = true;
