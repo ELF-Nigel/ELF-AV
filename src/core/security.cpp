@@ -5,6 +5,7 @@
 #include <softpub.h>
 #include <wincrypt.h>
 #include <sddl.h>
+#include <aclapi.h>
 #include <bcrypt.h>
 #include <vector>
 #include <sstream>
@@ -155,7 +156,7 @@ bool HardenDirectoryAcl(const std::wstring& path) {
 }
 
 static bool RunAuditPol(const std::wstring& args) {
-    std::wstring cmd = L\"auditpol.exe \" + args;
+    std::wstring cmd = L"auditpol.exe " + args;
     STARTUPINFOW si{};
     PROCESS_INFORMATION pi{};
     si.cb = sizeof(si);
@@ -172,8 +173,8 @@ static bool RunAuditPol(const std::wstring& args) {
 
 bool EnsureProcessAuditEnabled() {
     // Enables Security Event ID 4688 (Process Creation)
-    bool ok1 = RunAuditPol(L\"/set /subcategory:\\\"Process Creation\\\" /success:enable /failure:enable\");
-    bool ok2 = RunAuditPol(L\"/set /subcategory:\\\"Process Termination\\\" /success:enable /failure:enable\");
+    bool ok1 = RunAuditPol(L"/set /subcategory:\\\"Process Creation\\\" /success:enable /failure:enable");
+    bool ok2 = RunAuditPol(L"/set /subcategory:\\\"Process Termination\\\" /success:enable /failure:enable");
     return ok1 && ok2;
 }
 
@@ -190,6 +191,9 @@ bool GetSelfSha256(std::wstring& out) {
     DWORD hashObjectSize = 0, dataLen = 0, hashLen = 0;
     std::vector<uint8_t> hashObject;
     std::vector<uint8_t> hash(32);
+    std::vector<uint8_t> buf(1 << 16);
+    DWORD read = 0;
+    bool ok = false;
 
     if (BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_SHA256_ALGORITHM, nullptr, 0) != 0) goto cleanup;
     if (BCryptGetProperty(hAlg, BCRYPT_OBJECT_LENGTH, (PUCHAR)&hashObjectSize, sizeof(DWORD), &dataLen, 0) != 0) goto cleanup;
@@ -198,28 +202,21 @@ bool GetSelfSha256(std::wstring& out) {
     hash.resize(hashLen);
     if (BCryptCreateHash(hAlg, &hHash, hashObject.data(), (ULONG)hashObject.size(), nullptr, 0, 0) != 0) goto cleanup;
 
-    std::vector<uint8_t> buf(1 << 16);
-    DWORD read = 0;
     while (ReadFile(h, buf.data(), (DWORD)buf.size(), &read, nullptr) && read > 0) {
         if (BCryptHashData(hHash, buf.data(), read, 0) != 0) goto cleanup;
     }
-
     if (BCryptFinishHash(hHash, hash.data(), (ULONG)hash.size(), 0) != 0) goto cleanup;
 
     std::wstringstream ss;
     for (auto b : hash) ss << std::hex << std::setw(2) << std::setfill(L'0') << (int)b;
     out = ss.str();
-
-    CloseHandle(h);
-    BCryptDestroyHash(hHash);
-    BCryptCloseAlgorithmProvider(hAlg, 0);
-    return true;
+    ok = true;
 
 cleanup:
     if (h != INVALID_HANDLE_VALUE) CloseHandle(h);
     if (hHash) BCryptDestroyHash(hHash);
     if (hAlg) BCryptCloseAlgorithmProvider(hAlg, 0);
-    return false;
+    return ok;
 }
 
 static bool OpenSigKey(HKEY root, REGSAM access, HKEY& outKey) {
@@ -394,9 +391,9 @@ static std::wstring ExtractExePath(const std::wstring& cmd) {
 static bool IsSuspiciousAutorunPath(const std::wstring& path) {
     auto p = path;
     std::transform(p.begin(), p.end(), p.begin(), ::towlower);
-    return (p.find(L\"\\\\appdata\\\\\") != std::wstring::npos) ||
-           (p.find(L\"\\\\temp\\\\\") != std::wstring::npos) ||
-           (p.find(L\"\\\\downloads\\\\\") != std::wstring::npos);
+    return (p.find(L"\\appdata\\") != std::wstring::npos) ||
+           (p.find(L"\\temp\\") != std::wstring::npos) ||
+           (p.find(L"\\downloads\\") != std::wstring::npos);
 }
 
 static void CleanRunKey(HKEY root, const std::wstring& subkey) {
@@ -417,7 +414,7 @@ static void CleanRunKey(HKEY root, const std::wstring& subkey) {
             if (!exe.empty()) {
                 if (IsSuspiciousAutorunPath(exe) && !IsFileSignedPath(exe)) {
                     RegDeleteValueW(key, name);
-                    LogWarn(L\"removed suspicious autorun: \" + exe);
+                    LogWarn(L"removed suspicious autorun: " + exe);
                 }
             }
         }
@@ -430,12 +427,27 @@ static void CleanRunKey(HKEY root, const std::wstring& subkey) {
 }
 
 bool CleanSuspiciousAutoruns() {
-    CleanRunKey(HKEY_CURRENT_USER, L\"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\");
-    CleanRunKey(HKEY_LOCAL_MACHINE, L\"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\");
+    CleanRunKey(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run");
+    CleanRunKey(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run");
     return true;
 }
 
 bool EnsureScheduledTask() {
     wchar_t path[MAX_PATH] = {0};
     if (GetModuleFileNameW(nullptr, path, MAX_PATH) == 0) return false;
-    std::wstring cmd = L\"/create /f /sc onlogon /rl highest /tn avresearch /tr \\\"\";\n    cmd += path;\n    cmd += L\" --service\\\"\";\n\n    STARTUPINFOW si{};\n    PROCESS_INFORMATION pi{};\n    si.cb = sizeof(si);\n    std::wstring full = L\"schtasks.exe \" + cmd;\n    if (!CreateProcessW(nullptr, full.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {\n        return false;\n    }\n    WaitForSingleObject(pi.hProcess, 5000);\n    CloseHandle(pi.hThread);\n    CloseHandle(pi.hProcess);\n    return true;\n}
+    std::wstring cmd = L"/create /f /sc onlogon /rl highest /tn avresearch /tr \\\"";
+    cmd += path;
+    cmd += L" --service\\\"";
+
+    STARTUPINFOW si{};
+    PROCESS_INFORMATION pi{};
+    si.cb = sizeof(si);
+    std::wstring full = L"schtasks.exe " + cmd;
+    if (!CreateProcessW(nullptr, full.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
+        return false;
+    }
+    WaitForSingleObject(pi.hProcess, 5000);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return true;
+}

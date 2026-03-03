@@ -34,6 +34,8 @@ static bool HashSHA256(const std::wstring& path, std::wstring& out_hex) {
     DWORD hashObjectSize = 0, dataLen = 0, hashLen = 0;
     std::vector<uint8_t> hashObject;
     std::vector<uint8_t> hash(32);
+    std::ifstream in;
+    std::vector<char> buffer;
 
     if (BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_SHA256_ALGORITHM, nullptr, 0) != 0) return false;
     if (BCryptGetProperty(hAlg, BCRYPT_OBJECT_LENGTH, (PUCHAR)&hashObjectSize, sizeof(DWORD), &dataLen, 0) != 0) goto cleanup;
@@ -43,10 +45,10 @@ static bool HashSHA256(const std::wstring& path, std::wstring& out_hex) {
 
     if (BCryptCreateHash(hAlg, &hHash, hashObject.data(), (ULONG)hashObject.size(), nullptr, 0, 0) != 0) goto cleanup;
 
-    std::ifstream in(path, std::ios::binary);
+    in.open(path, std::ios::binary);
     if (!in) goto cleanup;
 
-    std::vector<char> buffer(1 << 16);
+    buffer.assign(1 << 16, 0);
     while (in) {
         in.read(buffer.data(), buffer.size());
         std::streamsize got = in.gcount();
@@ -234,7 +236,7 @@ static bool HasAlternateDataStreams(const std::wstring& path) {
     bool has_ads = false;
     do {
         std::wstring name = data.cStreamName;
-        if (name != L"::$DATA\") {
+        if (name != L"::$DATA") {
             has_ads = true;
             break;
         }
