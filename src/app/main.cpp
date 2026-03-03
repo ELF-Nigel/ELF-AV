@@ -236,6 +236,13 @@ int wmain(int argc, wchar_t** argv) {
         }
     }).detach();
 
+    std::thread([]() {
+        while (g_running) {
+            Sleep(3600000);
+            LogInfo(L"health check ok");
+        }
+    }).detach();
+
     StartPeriodicScanThread(cfg, sigs);
     std::thread([&cfg, &sigs]() {
         for (const auto& drive : GetFixedDrives()) {

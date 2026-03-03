@@ -103,6 +103,13 @@ static void RunCore() {
         }
     }).detach();
 
+    std::thread([]() {
+        while (g_serviceRunning) {
+            Sleep(3600000);
+            LogInfo(L"health check ok");
+        }
+    }).detach();
+
     if (cfg.periodic_scan_minutes > 0) {
         std::thread([cfg, &sigs]() {
             while (g_serviceRunning) {
