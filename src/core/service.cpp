@@ -38,6 +38,7 @@ static void ReportStatus(DWORD state, DWORD win32Exit = NO_ERROR) {
 
 static void RunCore() {
     Config cfg = DefaultConfig();
+    LogInfo(L"svc: start");
     if (!VerifySelfSignature()) {
         if (!AllowUnsignedOverride()) {
             LogError(L"signature check failed. stopping service.");
@@ -45,6 +46,7 @@ static void RunCore() {
         }
         LogWarn(L"signature check failed. override enabled for testing.");
     }
+    LogInfo(L"svc: signature ok or override");
     {
         wchar_t exePath[MAX_PATH] = {0};
         if (GetModuleFileNameW(nullptr, exePath, MAX_PATH)) {
@@ -53,20 +55,29 @@ static void RunCore() {
             }
         }
     }
+    LogInfo(L"svc: path check ok");
     HardenDirectoryAcl(cfg.quarantine_dir);
+    LogInfo(L"svc: quarantine acl ok");
     EnsureProcessAuditEnabled();
+    LogInfo(L"svc: audit policy ok");
     CleanSuspiciousAutoruns();
+    LogInfo(L"svc: autoruns cleaned");
     EnsureScheduledTask();
+    LogInfo(L"svc: scheduled task ok");
     HardenInstallDir();
+    LogInfo(L"svc: install dir hardened");
     HardenRegistryAcl();
+    LogInfo(L"svc: registry acl hardened");
 
     g_serviceRunning = true;
 
     SignatureDB sigs;
     sigs.LoadEmbedded();
+    LogInfo(L"svc: signatures loaded");
 
     InitProtection(cfg);
     StartProtectionThread();
+    LogInfo(L"svc: protection started");
 
     StartNetworkMonitorThread();
     StartRegistryMonitorThread();
@@ -80,6 +91,7 @@ static void RunCore() {
     StartDnsMonitorThread();
     StartHostsMonitorThread();
     StartTaskMonitorThread();
+    LogInfo(L"svc: monitors started");
 
     for (const auto& dir : cfg.watch_paths) {
         if (!StartWatchThread(dir, [&](const std::wstring& p) { ProcessFileEvent(p, cfg, sigs); })) {
@@ -144,6 +156,7 @@ static void RunCore() {
     }).detach();
 
     InitCanaries(GetFixedDrives());
+    LogInfo(L"svc: canaries init");
     std::thread([]() {
         while (g_serviceRunning) {
             Sleep(120000);
