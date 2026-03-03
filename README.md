@@ -62,6 +62,7 @@ powershell -ExecutionPolicy Bypass -File tools\gen_vs2022.ps1
 - test scan, quarantine list-details, and restore on vm
 - review event log alerts and tray notifications on win11
 - validate service hardening and registry acl on clean vm
+- verify startup folder, removable drive, and canary detections
 
 ## on-demand scan
 ```powershell
