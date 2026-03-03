@@ -18,6 +18,10 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: build
         run: cmake --build build --config Release
+      - name: sign (test cert)
+        shell: pwsh
+        run: |
+          .\tools\sign_test.ps1 -ExePath "build\Release\av_research.exe"
       - name: upload artifact
         uses: actions/upload-artifact@v4
         with:
