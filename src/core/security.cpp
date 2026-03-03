@@ -413,6 +413,34 @@ bool HardenFileAcl(const std::wstring& path) {
     return ok;
 }
 
+static bool HardenDirAclReadExec(const std::wstring& path) {
+    PSECURITY_DESCRIPTOR sd = nullptr;
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            L"D:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;RX;;;BU)(A;;RX;;;AU)", SDDL_REVISION_1, &sd, nullptr)) {
+        return false;
+    }
+
+    PACL dacl = nullptr;
+    BOOL daclPresent = FALSE;
+    BOOL daclDefaulted = FALSE;
+    if (!GetSecurityDescriptorDacl(sd, &daclPresent, &dacl, &daclDefaulted) || !daclPresent) {
+        LocalFree(sd);
+        return false;
+    }
+
+    bool ok = (SetNamedSecurityInfoW(
+        (LPWSTR)path.c_str(),
+        SE_FILE_OBJECT,
+        DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+        nullptr, nullptr,
+        dacl,
+        nullptr
+    ) == ERROR_SUCCESS);
+
+    LocalFree(sd);
+    return ok;
+}
+
 bool HardenInstallDir() {
     wchar_t path[MAX_PATH] = {0};
     if (GetModuleFileNameW(nullptr, path, MAX_PATH) == 0) return false;
@@ -423,7 +451,7 @@ bool HardenInstallDir() {
 
     // lock down exe and containing dir
     bool ok1 = HardenFileAcl(exe);
-    bool ok2 = SetDirectoryLockdown(dir, false);
+    bool ok2 = HardenDirAclReadExec(dir);
     return ok1 && ok2;
 }
 
