@@ -172,6 +172,13 @@ static bool IsSuspiciousPath(const std::wstring& path) {
            (p.find(L"\\appdata\\local\\temp\\") != std::wstring::npos);
 }
 
+static bool IsTrustedSystemPath(const std::wstring& path) {
+    auto p = ToLower(path);
+    return (p.rfind(L"c:\\windows\\", 0) == 0) ||
+           (p.rfind(L"c:\\program files\\", 0) == 0) ||
+           (p.rfind(L"c:\\program files (x86)\\", 0) == 0);
+}
+
 static bool IsExecutableExt(const std::wstring& path) {
     auto p = ToLower(path);
     auto dot = p.find_last_of(L'.');
@@ -297,6 +304,7 @@ bool LooksLikeDllSideLoading(const std::wstring& path) {
     if (p.find(L"\\windows\\system32\\") != std::wstring::npos) return false;
     if (p.find(L"\\program files\\") == std::wstring::npos) return false;
     if (IsFileSigned(path)) return false;
+    if (!IsSuspiciousPath(path) && !IsUserWritablePath(path)) return false;
     return true;
 }
 
@@ -315,6 +323,11 @@ ScanResult ScanFile(const std::wstring& path, const Config& cfg, const Signature
     if (sigs.Has(sha256)) {
         result.malicious = true;
         result.reason = L"signature match";
+        return result;
+    }
+
+    if (IsTrustedSystemPath(path)) {
+        if (IsVerboseLogging()) LogInfo(L"trusted path, skipping heuristics: " + path);
         return result;
     }
 
