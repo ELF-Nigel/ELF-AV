@@ -84,13 +84,17 @@ static int ShowMenu() {
     std::wcout << L"6) quarantine restore-all\n";
     std::wcout << L"7) quarantine delete\n";
     std::wcout << L"8) clean autoruns\n";
-    std::wcout << L"9) install service\n";
-    std::wcout << L"10) uninstall service\n";
+    std::wcout << L"9) full install (service + folders)\n";
+    std::wcout << L"10) full uninstall\n";
     std::wcout << L"0) exit\n";
     std::wcout << L"> ";
     int choice = -1;
     std::wcin >> choice;
     return choice;
+}
+
+static void LogChoice(int choice) {
+    LogInfo(L"menu choice: " + std::to_wstring(choice));
 }
 
 int wmain(int argc, wchar_t** argv) {
@@ -233,22 +237,29 @@ int wmain(int argc, wchar_t** argv) {
     if (argc == 1) {
         for (;;) {
             int choice = ShowMenu();
+            LogChoice(choice);
             if (choice == 0) return 0;
             if (choice == 1) {
                 std::wcout << L"path: ";
                 std::wstring p; std::wcin >> p;
+                LogInfo(L"menu: scan path requested: " + p);
                 std::wcout << L"scanning: " << p << L"\n";
                 ScanPathRecursiveNoRecord(p, cfg, sigs);
                 std::wcout << L"scan complete\n";
+                LogInfo(L"menu: scan path complete");
             } else if (choice == 2) {
+                LogInfo(L"menu: full system scan requested");
                 std::wcout << L"scanning full system\n";
                 for (const auto& drive : GetFixedDrives()) {
                     ScanPathRecursiveNoRecord(drive, cfg, sigs);
                 }
                 std::wcout << L"scan complete\n";
+                LogInfo(L"menu: full system scan complete");
             } else if (choice == 3) {
+                LogInfo(L"menu: quarantine list requested");
                 ListQuarantine(cfg.quarantine_dir);
             } else if (choice == 4) {
+                LogInfo(L"menu: quarantine list-details requested");
                 std::wcout << L"listing details\n";
                 std::wstring pattern = cfg.quarantine_dir + L"\\*";
                 WIN32_FIND_DATAW f{};
@@ -272,13 +283,16 @@ int wmain(int argc, wchar_t** argv) {
             } else if (choice == 5) {
                 std::wcout << L"sha256: ";
                 std::wstring sha; std::wcin >> sha;
+                LogInfo(L"menu: quarantine restore requested: " + sha);
                 std::wstring orig;
                 if (!LoadQuarantineMeta(sha, orig)) { std::wcout << L"not found\n"; continue; }
                 std::wstring qfile;
                 if (!FindQuarantineFile(cfg.quarantine_dir, sha, qfile)) { std::wcout << L"not found\n"; continue; }
                 MoveFileExW(qfile.c_str(), orig.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
                 DeleteQuarantineMeta(sha);
+                LogInfo(L"menu: quarantine restore complete: " + sha);
             } else if (choice == 6) {
+                LogInfo(L"menu: quarantine restore-all requested");
                 std::wcout << L"restoring all\n";
                 std::wstring pattern = cfg.quarantine_dir + L"\\*";
                 WIN32_FIND_DATAW f{};
@@ -304,19 +318,56 @@ int wmain(int argc, wchar_t** argv) {
             } else if (choice == 7) {
                 std::wcout << L"sha256: ";
                 std::wstring sha; std::wcin >> sha;
+                LogInfo(L"menu: quarantine delete requested: " + sha);
                 std::wstring qfile;
                 if (FindQuarantineFile(cfg.quarantine_dir, sha, qfile)) {
                     DeleteFileW(qfile.c_str());
                     DeleteQuarantineMeta(sha);
+                    LogInfo(L"menu: quarantine delete complete: " + sha);
+                } else {
+                    LogWarn(L"menu: quarantine delete failed (not found): " + sha);
                 }
             } else if (choice == 8) {
+                LogInfo(L"menu: clean autoruns requested");
                 CleanSuspiciousAutoruns();
+                LogInfo(L"menu: clean autoruns complete");
             } else if (choice == 9) {
                 wchar_t path[MAX_PATH] = {0};
                 GetModuleFileNameW(nullptr, path, MAX_PATH);
-                InstallService(path);
+                LogInfo(L"full install requested");
+                CreateDirectoryW(cfg.quarantine_dir.c_str(), nullptr);
+                HardenDirectoryAcl(cfg.quarantine_dir);
+                HardenInstallDir();
+                HardenRegistryAcl();
+                if (InstallService(path)) {
+                    LogInfo(L"service installed");
+                    SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
+                    if (scm) {
+                        SC_HANDLE svc = OpenServiceW(scm, L"AVResearch", SERVICE_START);
+                        if (svc) {
+                            if (!StartServiceW(svc, 0, nullptr)) {
+                                LogError(L"service start failed: " + std::to_wstring(GetLastError()));
+                            } else {
+                                LogInfo(L"service start requested");
+                            }
+                            CloseServiceHandle(svc);
+                        } else {
+                            LogError(L"open service failed: " + std::to_wstring(GetLastError()));
+                        }
+                        CloseServiceHandle(scm);
+                    } else {
+                        LogError(L"open scm failed: " + std::to_wstring(GetLastError()));
+                    }
+                } else {
+                    LogError(L"service install failed");
+                }
             } else if (choice == 10) {
-                UninstallService();
+                LogInfo(L"full uninstall requested");
+                if (!UninstallService()) {
+                    LogError(L"full uninstall failed");
+                } else {
+                    LogInfo(L"full uninstall complete");
+                }
             }
         }
     }
