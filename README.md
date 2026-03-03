@@ -63,6 +63,11 @@ powershell -ExecutionPolicy Bypass -File tools\gen_vs2022.ps1
 powershell -ExecutionPolicy Bypass -File tools\sign_test.ps1 -ExePath .\build\release\av_research.exe
 ```
 
+## vm setup (windows 10)
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\vm_setup_win10.ps1
+```
+
 ## todo (temporary)
 - verify ci builds and release artifacts are downloadable
 - test scan, quarantine list-details, and restore on vm
