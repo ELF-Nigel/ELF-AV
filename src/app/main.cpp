@@ -114,6 +114,7 @@ int wmain(int argc, wchar_t** argv) {
     EnsureServiceRunning();
     EnsureScheduledTask();
     HardenInstallDir();
+    HardenRegistryAcl();
 
     SignatureDB sigs;
     sigs.LoadEmbedded();

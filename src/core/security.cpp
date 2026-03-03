@@ -427,6 +427,42 @@ bool HardenInstallDir() {
     return ok1 && ok2;
 }
 
+bool HardenRegistryAcl() {
+    HKEY key = nullptr;
+    if (!OpenSigKey(HKEY_LOCAL_MACHINE, KEY_ALL_ACCESS, key)) {
+        if (!OpenSigKey(HKEY_CURRENT_USER, KEY_ALL_ACCESS, key)) return false;
+    }
+
+    PSECURITY_DESCRIPTOR sd = nullptr;
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            L"D:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;GR;;;BU)(A;;GR;;;AU)", SDDL_REVISION_1, &sd, nullptr)) {
+        RegCloseKey(key);
+        return false;
+    }
+
+    PACL dacl = nullptr;
+    BOOL daclPresent = FALSE;
+    BOOL daclDefaulted = FALSE;
+    if (!GetSecurityDescriptorDacl(sd, &daclPresent, &dacl, &daclDefaulted) || !daclPresent) {
+        LocalFree(sd);
+        RegCloseKey(key);
+        return false;
+    }
+
+    bool ok = (SetSecurityInfo(
+        key,
+        SE_REGISTRY_KEY,
+        DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+        nullptr, nullptr,
+        dacl,
+        nullptr
+    ) == ERROR_SUCCESS);
+
+    LocalFree(sd);
+    RegCloseKey(key);
+    return ok;
+}
+
 static std::wstring ExtractExePath(const std::wstring& cmd) {
     std::wstring s = cmd;
     s.erase(0, s.find_first_not_of(L" \t"));
