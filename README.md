@@ -57,6 +57,11 @@ del c:\temp\sigblob.bin
 powershell -ExecutionPolicy Bypass -File tools\gen_vs2022.ps1
 ```
 
+## todo (temporary)
+- verify ci builds and release artifacts are downloadable
+- test scan, quarantine list-details, and restore on vm
+- review event log alerts and tray notifications on win11
+
 ## on-demand scan
 ```powershell
 .\build\release\av_research.exe --scan c:\path\to\scan
