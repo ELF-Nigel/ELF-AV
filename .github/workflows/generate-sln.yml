@@ -1,0 +1,24 @@
+name: generate sln
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  gen:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: generate sln
+        run: cmake -S . -B build_vs2022 -G "Visual Studio 17 2022" -A x64
+      - name: commit sln
+        shell: pwsh
+        run: |
+          git config user.name "ELF-Nigel"
+          git config user.email "ELF-Nigel@users.noreply.github.com"
+          git add build_vs2022/av_research.sln build_vs2022/av_research.vcxproj build_vs2022/av_research.vcxproj.filters
+          git commit -m "ci: add vs2022 sln" || exit 0
+      - name: push
+        run: git push
